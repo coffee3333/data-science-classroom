@@ -21,25 +21,18 @@ jobs:
           COUNTER=0
 
           while [ $COUNTER -lt $MAX_RETRIES ]; do
-            RESPONSE=$(curl -s -o response.txt -w "%{http_code}" -X POST "$SERVER_URL" \
-                -H "Content-Type: application/json" \
-                --data-raw '{
-                  "repository": "'${{ github.repository }}'",
-                  "ref": "'${{ github.ref }}'",
-                  "commit": "'${{ github.sha }}'",
-                  "previous_commit": "'${{ github.event.before }}'",
-                  "pusher": "'${{ github.actor }}'"
-                }')
+            RESPONSE=$(curl -s -o response.txt -w "%{http_code}" -X POST "$SERVER_URL/api/forward?appToken=${{ secrets.APP_TOKEN }}&repositoryName=${{ github.repository }}&currentCommit=${{ github.sha }}&prevCommit=${{ github.event.before }}&pusherName=${{ github.actor }}")
 
             if [ "$RESPONSE" -eq 200 ]; then
               echo "Notification sent successfully!"
               exit 0
             else
-              echo "Failed to notify server (HTTP $RESPONSE), retrying in $RETRY_DELAY seconds..."
+              echo "Failed to notify server (HTTP $RESPONSE), response: $(cat response.txt)"
+              echo "Retrying in $RETRY_DELAY seconds..."
               sleep $RETRY_DELAY
               COUNTER=$((COUNTER + 1))
             fi
           done
 
-          echo "Failed to notify server after $MAX_RETRIES attempts."
+          echo "Failed to notify server after $MAX_RETRIES attempts. Final response: $(cat response.txt)"
           exit 1
