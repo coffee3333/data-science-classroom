@@ -1,0 +1,45 @@
+name: Notify Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Notify Server with Retries
+        env:
+          SERVER_URL: ${{ secrets.SERVER_URL }}
+        run: |
+          MAX_RETRIES=5
+          RETRY_DELAY=5
+          COUNTER=0
+
+          while [ $COUNTER -lt $MAX_RETRIES ]; do
+            RESPONSE=$(curl -s -o response.txt -w "%{http_code}" -X POST "$SERVER_URL" \
+                -H "Content-Type: application/json" \
+                --data-raw '{
+                  "repository": "'${{ github.repository }}'",
+                  "ref": "'${{ github.ref }}'",
+                  "commit": "'${{ github.sha }}'",
+                  "previous_commit": "'${{ github.event.before }}'",
+                  "pusher": "'${{ github.actor }}'"
+                }')
+
+            if [ "$RESPONSE" -eq 200 ]; then
+              echo "Notification sent successfully!"
+              exit 0
+            else
+              echo "Failed to notify server (HTTP $RESPONSE), retrying in $RETRY_DELAY seconds..."
+              sleep $RETRY_DELAY
+              COUNTER=$((COUNTER + 1))
+            fi
+          done
+
+          echo "Failed to notify server after $MAX_RETRIES attempts."
+          exit 1
