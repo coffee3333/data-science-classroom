@@ -4,7 +4,7 @@ def show():
     print("\n")
     for r in range(3):
         print(" | ".join(BOARD[r]))
-        if r < 2: print("--+---+--")
+        if r < 2: print("--|---|--")
     print()
 
 def winner():
@@ -33,11 +33,11 @@ def full():
 def ask_move(player):
     while True:
         try:
-            r, c = map(int, input(f"Player {player} (row col 1-3): ").split())
+            r, c = map(int, input(f"Choose {player} (row col 1-3): ").split())
             r -= 1; c -= 1
             if 0 <= r < 3 and 0 <= c < 3 and BOARD[r][c] == " ":
                 return r, c
-            print("Bad move. Try again.")
+            print("Incorrect move. Try again.")
         except:
             print("Enter two numbers like: 2 3")
 
